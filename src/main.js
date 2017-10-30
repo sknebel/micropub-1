@@ -65,6 +65,14 @@ class Micropub {
   }
 
   /**
+  let url = response.request.uri.href
+    let options = {}
+    options['html'] = body;
+    options['baseUrl'] = url;
+	*/
+  
+  
+  /**
    * Get the various endpoints needed from the given url
    * @param  {string} url The url to scrape
    * @return {Promise}    Passes an object of endpoints on success: auth, token and micropub
@@ -77,35 +85,31 @@ class Micropub {
           if (!res.ok) {
             return reject(micropubError('Error getting page', res.status));
           }
-          return res.text()
-        })
-        .then((html) => {
-          // Parse the microformats data
-          Microformats.get({
-            html: html,
-          }, (err, mfData) => {
-            if (err) {
-              return reject(micropubError('Error parsing microformats data', null, err));
-            }
-
-            // Save necessary endpoints.
-            if (mfData && mfData.rels && mfData.rels.authorization_endpoint && mfData.rels.token_endpoint && mfData.rels.micropub) {
-              this.options.me = url;
-              this.options.authEndpoint = mfData.rels.authorization_endpoint[0];
-              this.options.tokenEndpoint = mfData.rels.token_endpoint[0];
-              this.options.micropubEndpoint = mfData.rels.micropub[0];
-
-              fulfill({
-                auth: this.options.authEndpoint,
-                token: this.options.tokenEndpoint,
-                micropub: this.options.micropubEndpoint,
-              });
-            }
-
-            return reject(micropubError('Error getting microformats data'));
-          });
-        })
-        .catch((err) => reject(micropubError('Error fetching url', null, err)));
+		  let baseUrl = res.url
+		  return res.text().then((html) => {
+            // Parse the microformats data
+            Microformats.get({html: html, baseUrl: baseUrl}, (err, mfData) => {
+              if (err) {
+                return reject(micropubError('Error parsing microformats data', null, err));
+              }
+            
+              // Save necessary endpoints.
+              if (mfData && mfData.rels && mfData.rels.authorization_endpoint && mfData.rels.token_endpoint && mfData.rels.micropub) {
+                this.options.me = url;
+                this.options.authEndpoint = mfData.rels.authorization_endpoint[0];
+                this.options.tokenEndpoint = mfData.rels.token_endpoint[0];
+                this.options.micropubEndpoint = mfData.rels.micropub[0];
+            
+                fulfill({
+                  auth: this.options.authEndpoint,
+                  token: this.options.tokenEndpoint,
+                  micropub: this.options.micropubEndpoint,
+                });
+              }
+              return reject(micropubError('Error getting microformats data'));
+            });
+          });  
+        }).catch((err) => reject(micropubError('Error fetching url', null, err)));
     });
   }
 
